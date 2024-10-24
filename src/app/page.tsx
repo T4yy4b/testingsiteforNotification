@@ -1,44 +1,80 @@
-"use client"
+"use client"; 
 
-import { useEffect, useState } from "react";
-import { messaging } from "@/firebase"; 
-import { getToken } from "firebase/messaging";
-import styles from "./page.module.css";
+import { useState, useEffect } from "react";
+import { messaging } from "@/firebase";
+import { getToken, onMessage } from "firebase/messaging";
 
-export default function Home() {
+
+const PushNotification = () => {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // Request permission to send notifications
     const requestPermission = async () => {
-      try {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          // Get the FCM token
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        try {
           const currentToken = await getToken(messaging, {
-            vapidKey: "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ	", 
+            vapidKey:
+              "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ", 
           });
           if (currentToken) {
             setToken(currentToken);
             console.log("FCM Token:", currentToken);
           } else {
-            console.error("No registration token available. Request permission to generate one.");
+            console.error(
+              "No registration token available. Request permission to generate one."
+            );
           }
+        } catch (error) {
+          console.error("Error getting FCM token:", error);
         }
-      } catch (error) {
-        console.error("Error getting permission for notifications", error);
+      } else {
+        console.log("Notification permission not granted.");
       }
     };
 
     requestPermission();
+
+  
+    onMessage(messaging, (payload) => {
+      console.log("Message received in foreground: ", payload);
+      const notificationTitle = payload.notification?.title || "No title";
+      const notificationOptions = {
+        body: payload.notification?.body || "No body",
+        icon: "/lifewwCloud.png" ,
+      
+      };
+
+
+      if (Notification.permission === "granted") {
+        new Notification(notificationTitle, notificationOptions);
+        
+      }
+    });
   }, []);
 
+
+  const triggerNotification = async () => {
+    if (token) {
+      if (Notification.permission === "granted") {
+        new Notification("Push Notification Triggered", {
+          body: "A push notification should be triggered via Firebase",
+          icon: "/lifewwCloud.png", 
+        });
+      } else {
+        alert("User has not granted notification permission.");
+      }
+    } else {
+      alert("Allow notifications !");
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <div>Push Notification Testing</div>
-      <button onClick={() => alert(token ? `Token: ${token}` : "No token available")}>
-        Allow Notifications
-      </button>
+    <div>
+      <h1>Click the button to trigger a push notification!</h1>
+      <button onClick={triggerNotification}>Show Notification</button>
     </div>
   );
-}
+};
+
+export default PushNotification;
