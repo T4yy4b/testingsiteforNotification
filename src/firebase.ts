@@ -16,7 +16,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const messaging = getMessaging(app); // Initialize Firebase Messaging
 
 export { messaging }; // Export messaging for use in other parts of your app
