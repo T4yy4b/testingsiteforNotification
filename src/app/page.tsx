@@ -1,20 +1,38 @@
-"use client"; 
+"use client";
 
 import { useState, useEffect } from "react";
 import { messaging } from "@/firebase";
-import { getToken, onMessage } from "firebase/messaging";
+import { getToken, onMessage, MessagePayload } from "firebase/messaging";
 
 const PushNotification = () => {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const requestPermission = async () => {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
+    if (!messaging) {
+      console.warn("Firebase messaging is not supported in this browser.");
+      return;
+    }
+
+    // Register the service worker
+    const registerServiceWorker = async () => {
+      if ("serviceWorker" in navigator) {
         try {
+          const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+          console.log("Service Worker registered:", registration);
+        } catch (error) {
+          console.error("Service Worker registration failed:", error);
+        }
+      }
+    };
+
+    registerServiceWorker();
+
+    const requestPermission = async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted" && messaging) { // Null check added here
           const currentToken = await getToken(messaging, {
-            vapidKey:
-              "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ", 
+            vapidKey: "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ",
           });
           if (currentToken) {
             setToken(currentToken);
@@ -22,37 +40,40 @@ const PushNotification = () => {
           } else {
             console.error("No registration token available. Request permission to generate one.");
           }
-        } catch (error) {
-          console.error("Error getting FCM token:", error);
+        } else {
+          console.log("Notification permission not granted.");
         }
-      } else {
-        console.log("Notification permission not granted.");
+      } catch (error) {
+        console.error("Error getting FCM token:", error);
       }
     };
 
     requestPermission();
 
-    onMessage(messaging, (payload) => {
-      console.log("Message received in foreground: ", payload);
-      const notificationTitle = payload.notification?.title || "No title";
-      const notificationOptions = {
-        body: payload.notification?.body || "No body",
-        icon: "/lifewwCloud.png",
-        data: {
-          url: "https://www.weatherwalay.com/", // Replace with your desired URL
-        },
-      };
+    const unsubscribe = messaging
+      ? onMessage(messaging, (payload: MessagePayload) => {
+          console.log("Message received in foreground: ", payload);
+          const notificationTitle = payload.notification?.title || "No title";
+          const notificationOptions = {
+            body: payload.notification?.body || "No body",
+            icon: "/lifewwCloud.png",
+            data: {
+              url: process.env.NEXT_PUBLIC_APP_URL + "/polygon",
+            },
+          };
 
-      if (Notification.permission === "granted") {
-        const notification = new Notification(notificationTitle, notificationOptions);
-        
-        // Handle notification click event
-        notification.onclick = (event) => {
-          event.preventDefault(); // Prevent the default behavior
-          window.open(notificationOptions.data.url, '_blank'); // Open the URL in a new tab
-        };
-      }
-    });
+          if (Notification.permission === "granted") {
+            const notification = new Notification(notificationTitle, notificationOptions);
+            
+            notification.onclick = (event) => {
+              event.preventDefault();
+              window.open(notificationOptions.data.url, "_blank");
+            };
+          }
+        })
+      : () => {}; // No-op function if messaging is null
+
+    return () => unsubscribe();
   }, []);
 
   const triggerNotification = async () => {
@@ -62,20 +83,19 @@ const PushNotification = () => {
           body: "A push notification should be triggered via Firebase",
           icon: "/lifewwCloud.png",
           data: {
-            url: "https://www.weatherwalay.com/",
+            url: process.env.NEXT_PUBLIC_APP_URL + "/polygon",
           },
         });
 
-        // Handle notification click event
         notification.onclick = (event) => {
-          event.preventDefault(); // Prevent the default behavior
-          window.open(notification.data.url, '_blank'); // Open the URL in a new tab
+          event.preventDefault();
+          window.open(notification.data.url, "_blank");
         };
       } else {
         alert("User has not granted notification permission.");
       }
     } else {
-      alert("Allow notifications!");
+      alert("Please allow notifications to receive alerts.");
     }
   };
 

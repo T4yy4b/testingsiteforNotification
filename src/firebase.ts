@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getMessaging } from "firebase/messaging"; // Import Firebase Messaging
+import { getMessaging, onMessage, isSupported ,Messaging } from "firebase/messaging"; // Import Firebase Messaging
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,6 +15,26 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app); // Initialize Firebase Messaging
+
+// Initialize Firebase Messaging with browser support check
+let messaging: Messaging | null = null;
+
+async function initializeMessaging() {
+  const supported = await isSupported();
+  if (!supported) {
+    console.warn("This browser doesn't support Firebase messaging.");
+    return;
+  }
+
+  messaging = getMessaging(app); // Initialize Firebase Messaging
+  onMessage(messaging, (payload) => {
+    console.log("Message received: ", payload);
+    // You can handle foreground notifications here if needed
+  });
+}
+
+if (typeof window !== "undefined") {
+  initializeMessaging();
+}
 
 export { messaging }; // Export messaging for use in other parts of your app
