@@ -18,31 +18,37 @@ firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 // Background notification handler
+// Background notification handler
 messaging.onBackgroundMessage((payload) => {
   console.log("Received background message", payload);
-  const notificationTitle = payload?.notification?.title || "Default Title";
+
+  // Log the entire payload to see its structure
+  console.log("Payload:", JSON.stringify(payload, null, 2));
+
+  const notificationTitle = payload.notification?.title || "Default Title";
+  const notificationBody = payload.notification?.body || "Default body";
+  const notificationData = payload.data || {}; // Extract data from payload
+
   const notificationOptions = {
-    body: payload?.notification?.body || "Default body",
+    body: notificationBody,
     data: {
-      click_action: payload?.data?.click_action || "open_url",
-      url: payload?.data?.url || ` ''}`,
+      click_action: notificationData.click_action || "open_url",
+      url: notificationData.url || "", // Set a default URL if needed
     },
   };
-
-  console.log("payLoad notifications :" , payload.notification);
-  
 
   // Show the background notification
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
 
 // Event listener for notification click actions
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data;
 
-  // Customize URL if you need to pass dynamic data
-  const url = `/polygon?data=${encodeURIComponent(JSON.stringify(data))}`;
+  const url = data.url || "/polygon"; // Default URL if not provided
+
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
@@ -50,9 +56,8 @@ self.addEventListener("notificationclick", (event) => {
           return client.focus();
         }
       }
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
+      return clients.openWindow(url); // Open a new window if none are matched
     })
   );
 });
+
