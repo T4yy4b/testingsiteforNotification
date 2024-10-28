@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { messaging } from "@/firebase";
+import { messaging } from "@/firebase"; // Ensure this is correctly initialized
 import { getToken, onMessage, MessagePayload } from "firebase/messaging";
 
 const PushNotification = () => {
@@ -12,13 +12,15 @@ const PushNotification = () => {
       console.warn("Firebase messaging is not supported in this browser.");
       return;
     }
-console.log("hello");
+    console.log("PushNotification component mounted");
 
     // Register the service worker
     const registerServiceWorker = async () => {
       if ("serviceWorker" in navigator) {
         try {
-          const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+          const registration = await navigator.serviceWorker.register(
+            "/firebase-messaging-sw.js"
+          );
           console.log("Service Worker registered:", registration);
         } catch (error) {
           console.error("Service Worker registration failed:", error);
@@ -31,15 +33,16 @@ console.log("hello");
     const requestPermission = async () => {
       try {
         const permission = await Notification.requestPermission();
-        if (permission === "granted" && messaging) { // Null check added here
+        if (permission === "granted" && messaging) {
           const currentToken = await getToken(messaging, {
             vapidKey: "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ",
           });
           if (currentToken) {
             setToken(currentToken);
             console.log("FCM Token:", currentToken);
+            // Here, you might want to send this token to your server for storing
           } else {
-            console.error("No registration token available. Request permission to generate one.");
+            console.error("No registration token available.");
           }
         } else {
           console.log("Notification permission not granted.");
@@ -65,16 +68,15 @@ console.log("hello");
 
           if (Notification.permission === "granted") {
             const notification = new Notification(notificationTitle, notificationOptions);
-            
             notification.onclick = (event) => {
               event.preventDefault();
               window.open(notificationOptions.data.url, "_blank");
             };
           }
         })
-      : () => {}; // No-op function if messaging is null
+      : () => {}; // Ensure messaging is initialized
 
-    return () => unsubscribe();
+    return () => unsubscribe(); // Cleanup on unmount
   }, []);
 
   const triggerNotification = async () => {
