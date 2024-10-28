@@ -12,6 +12,7 @@ const PushNotification = () => {
       console.warn("Firebase messaging is not supported in this browser.");
       return;
     }
+console.log("hello");
 
     // Register the service worker
     const registerServiceWorker = async () => {
