@@ -12,8 +12,8 @@ const PushNotification = () => {
       console.warn("Firebase messaging is not supported in this browser.");
       return;
     }
-    console.log("PushNotification component mounted");
-
+    console.log("PushNotification component mounted"); // Log on mount
+  
     // Register the service worker
     const registerServiceWorker = async () => {
       if ("serviceWorker" in navigator) {
@@ -25,38 +25,37 @@ const PushNotification = () => {
         } catch (error) {
           console.error("Service Worker registration failed:", error);
         }
-      } else {
-        console.warn("Service Workers are not supported in this browser.");
       }
     };
-    
-
+  
     registerServiceWorker();
-
+  
     const requestPermission = async () => {
       try {
         const permission = await Notification.requestPermission();
         if (permission === "granted" && messaging) {
           const currentToken = await getToken(messaging, {
-            vapidKey: "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ",
+            vapidKey:
+              "BFVs2lwurH-KgXU0y0EVfwIwjeyUhysiOhJ9EKrtdkhpWNeBqVu4CdwScbF4_mgfihoFNCygZoLNY_17zxCsHOQ",
           });
           if (currentToken) {
             setToken(currentToken);
             console.log("FCM Token:", currentToken);
-            // Here, you might want to send this token to your server for storing
           } else {
-            console.error("No registration token available.");
+            console.error("No registration token available. Request permission to generate one.");
           }
+        } else if (permission === "denied") {
+          alert("Notification permission denied. You won't receive notifications.");
         } else {
-          console.log("Notification permission not granted.");
+          alert("Notification permission was not granted. You can change this in your browser settings.");
         }
       } catch (error) {
         console.error("Error getting FCM token:", error);
       }
     };
-
+  
     requestPermission();
-
+  
     const unsubscribe = messaging
       ? onMessage(messaging, (payload: MessagePayload) => {
           console.log("Message received in foreground: ", payload);
@@ -68,7 +67,7 @@ const PushNotification = () => {
               url: process.env.NEXT_PUBLIC_APP_URL + "/polygon",
             },
           };
-
+  
           if (Notification.permission === "granted") {
             const notification = new Notification(notificationTitle, notificationOptions);
             notification.onclick = (event) => {
@@ -77,10 +76,11 @@ const PushNotification = () => {
             };
           }
         })
-      : () => {}; // Ensure messaging is initialized
-
-    return () => unsubscribe(); // Cleanup on unmount
+      : () => {}; // No-op function if messaging is null
+  
+    return () => unsubscribe();
   }, []);
+  
 
   const triggerNotification = async () => {
     if (token) {
