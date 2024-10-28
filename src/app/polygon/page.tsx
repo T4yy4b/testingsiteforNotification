@@ -14,12 +14,15 @@ interface NotificationPayload {
 }
 
 const PushNotificationListener = () => {
-  const [messageData, setMessageData] = useState<NotificationPayload | null>(null);
+  const [messageData, setMessageData] = useState<NotificationPayload>({
+    notification: { title: "No new notifications", body: "" },
+    data: { click_action: "", url: "" },
+  });
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.addEventListener("message", (event) => {
-        const payload = event.data as NotificationPayload;  
+        const payload = event.data as NotificationPayload;
         console.log("Message from service worker:", payload);
         setMessageData(payload);
       });
@@ -28,15 +31,9 @@ const PushNotificationListener = () => {
 
   return (
     <div>
-      {messageData ? (
-        <div>
-          <h2>New Notification:</h2>
-          <p>Title: {messageData.notification?.title}</p>
-          <p>Body: {messageData.notification?.body}</p>
-        </div>
-      ) : (
-        <p>No new notifications</p>
-      )}
+      <h2>Notification:</h2>
+      <p>Title: {messageData.notification?.title}</p>
+      <p>Body: {messageData.notification?.body}</p>
     </div>
   );
 };

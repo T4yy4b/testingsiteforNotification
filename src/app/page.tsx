@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { messaging } from "@/firebase"; // Ensure this is correctly initialized
+import { messaging } from "@/firebase"; 
 import { getToken, onMessage, MessagePayload } from "firebase/messaging";
 
 const PushNotification = () => {
@@ -16,7 +16,7 @@ const PushNotification = () => {
   
     // Register the service worker
     const registerServiceWorker = async () => {
-      if ("serviceWorker" in navigator) {
+      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
         try {
           const registration = await navigator.serviceWorker.register(
             "/firebase-messaging-sw.js"
@@ -27,6 +27,7 @@ const PushNotification = () => {
         }
       }
     };
+    
   
     registerServiceWorker();
   
